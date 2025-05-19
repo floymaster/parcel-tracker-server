@@ -1,46 +1,29 @@
-const express = require('express');
-const puppeteer = require('puppeteer');
-const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer-core');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Путь к каталогу кеша Puppeteer
+const cacheDir = '/opt/render/.cache/puppeteer';
 
-app.use(cors());
+// Проверка, существует ли каталог кеша, если нет — создаем его
+if (!fs.existsSync(cacheDir)) {
+  fs.mkdirSync(cacheDir, { recursive: true });
+}
 
-app.get('/track', async (req, res) => {
-  const code = req.query.code;
-  if (!code) return res.status(400).send({ error: 'No code provided' });
-
+// Теперь вы можете запустить Puppeteer
+(async () => {
   try {
     const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      executablePath: '/usr/bin/chromium-browser', // Путь к вашему Chromium (проверьте правильность)
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Часто требуется в облаке
     });
-    const page = await browser.newPage();
-    await page.goto(`https://track24.net/service/track/tracking/${code}`, { waitUntil: 'networkidle2' });
 
-    const data = await page.evaluate(() => {
-      const events = [];
-      document.querySelectorAll('#trackingEvents .trackingInfoRow').forEach(row => {
-        const date = row.querySelector('.date')?.textContent?.trim();
-        const time = row.querySelector('.time')?.textContent?.trim();
-        const status = row.querySelector('.operationAttribute')?.textContent?.trim();
-        const location = row.querySelector('.operationPlace')?.textContent?.trim();
-        if (date && status) {
-          events.push({ date, time, status, location });
-        }
-      });
-      return events;
-    });
+    const page = await browser.newPage();
+    await page.goto('https://example.com');
+    await page.screenshot({ path: 'example.png' });
 
     await browser.close();
-    res.json(data);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send({ error: 'Failed to fetch tracking info' });
+  } catch (err) {
+    console.error('Ошибка при запуске Puppeteer:', err);
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+})();
