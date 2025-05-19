@@ -1,29 +1,35 @@
-const fs = require('fs');
-const path = require('path');
-const puppeteer = require('puppeteer-core');
+const express = require('express');
+const cors = require('cors');
+const puppeteer = require('puppeteer-core'); // Используем puppeteer-core
 
-// Путь к каталогу кеша Puppeteer
-const cacheDir = '/opt/render/.cache/puppeteer';
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Проверка, существует ли каталог кеша, если нет — создаем его
-if (!fs.existsSync(cacheDir)) {
-  fs.mkdirSync(cacheDir, { recursive: true });
-}
+app.use(cors());
 
-// Теперь вы можете запустить Puppeteer
-(async () => {
+app.get('/', async (req, res) => {
   try {
+    // Запускаем браузер с указанием пути к Chromium
     const browser = await puppeteer.launch({
-      executablePath: '/usr/bin/chromium-browser', // Путь к вашему Chromium (проверьте правильность)
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Часто требуется в облаке
+      executablePath: '/usr/bin/chromium-browser', // Путь к установленному Chromium
+      headless: true, // Открываем в headless-режиме (без графического интерфейса)
     });
 
     const page = await browser.newPage();
-    await page.goto('https://example.com');
-    await page.screenshot({ path: 'example.png' });
+    await page.goto('https://example.com'); // Здесь ваш код для парсинга
 
+    // Выполнение операций с page, например:
+    const title = await page.title();
+    res.send(`Page title: ${title}`);
+
+    await page.close();
     await browser.close();
-  } catch (err) {
-    console.error('Ошибка при запуске Puppeteer:', err);
+  } catch (error) {
+    console.error('Ошибка при запуске Puppeteer:', error);
+    res.status(500).send('Ошибка при парсинге');
   }
-})();
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
