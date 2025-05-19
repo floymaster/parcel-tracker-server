@@ -1,15 +1,28 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
-  "description": "Parcel tracking backend using Puppeteer",
+  "description": "Parcel tracker server with Puppeteer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-"postinstall": "npx puppeteer install"
+    "postinstall": "npx puppeteer install",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "puppeteer": "^24.8.2"
+    "express": "^4.17.1",
+    "puppeteer": "^22.15.0",
+    "puppeteer-core": "^21.11.0",
+    "chrome-aws-lambda": "^10.0.0"
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  },
+  "dependencies": {
+    "puppeteer": "^22.15.0"
   }
 }
