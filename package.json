@@ -1,14 +1,21 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
+  "description": "Parcel Tracker server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "install": "npm install"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "puppeteer": "^20.0.0",
-    "cors": "^2.8.5"
-  }
+    "express": "^4.18.2",
+    "puppeteer": "^24.8.2",
+    "chrome-aws-lambda": "^9.1.0"
+  },
+  "devDependencies": {
+    "npm": "^8.19.4"
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "license": "MIT"
 }
