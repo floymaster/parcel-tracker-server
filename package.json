@@ -9,20 +9,15 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
     "puppeteer": "^22.15.0",
-    "puppeteer-core": "^21.11.0",
-    "chrome-aws-lambda": "^10.0.0"
+    "simple-update-notifier": "^2.0.0"
   },
   "engines": {
-    "node": "16.x"
+    "node": ">=16.x <24.x"
   },
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^2.0.15"
-  },
-  "dependencies": {
-    "puppeteer": "^22.15.0"
+    "nodemon": "^3.1.10"
   }
 }
