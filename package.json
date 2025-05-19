@@ -1,16 +1,22 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
-  "description": "Parcel Tracker Server",
+  "description": "Parcel tracking server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "apt-get update && apt-get install -y chromium"
+    "install": "npm install"
   },
   "dependencies": {
-    "puppeteer-core": "^24.8.2", 
     "express": "^4.17.1",
-    "cors": "^2.8.5",
+    "puppeteer-core": "^24.8.0"
+  },
+  "devDependencies": {
     "nodemon": "^2.0.22"
-  }
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "author": "",
+  "license": "ISC"
 }
