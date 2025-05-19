@@ -4,12 +4,13 @@
   "description": "Parcel tracking server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",  // Команда для запуска сервера
-    "install": "npm install"     // Установка зависимостей
+    "start": "node server.js",
+    "install": "npm install"
   },
   "dependencies": {
     "express": "^4.17.1",
-    "puppeteer-core": "^24.8.0"  // Используйте puppeteer-core вместо полного puppeteer
+    "puppeteer-core": "^24.8.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
