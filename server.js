@@ -1,50 +1,35 @@
-const puppeteer = require('puppeteer-core'); // используем puppeteer-core вместо полного puppeteer
 const express = require('express');
+const puppeteer = require('puppeteer');
+const cors = require('cors');
+const { exec } = require('child_process');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-const { exec } = require('child_process');
+app.use(cors());
 
-// Функция для получения пути к браузеру
-async function getChromiumPath() {
-  return new Promise((resolve, reject) => {
-    exec('which chromium-browser', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`exec error: ${error}`);
-        reject(stderr);
-      }
-      console.log(`Chromium path: ${stdout}`);
-      resolve(stdout.trim()); // Возвращаем путь к Chromium
-    });
-  });
-}
+exec('which chromium-browser', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`exec error: ${error}`);
+    return;
+  }
+  console.log(`Chromium path: ${stdout}`);
+});
 
-// Функция запуска браузера
-async function launchBrowser() {
-  const chromiumPath = await getChromiumPath();
-  const browser = await puppeteer.launch({
-    executablePath: chromiumPath || '/usr/bin/chromium-browser', // Указываем путь к браузеру
-    headless: true, // без графического интерфейса
-  });
-
-  const page = await browser.newPage();
-  await page.goto('https://example.com'); // Пример действия
-  console.log('Page loaded');
-
-  await browser.close();
-}
-
-// Запуск сервера
 app.get('/', async (req, res) => {
   try {
-    await launchBrowser(); // Запускаем Puppeteer
-    res.send('Page parsed successfully');
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto('https://example.com');
+    const title = await page.title();
+    await browser.close();
+    res.send(`Page title is: ${title}`);
   } catch (err) {
-    console.error('Error during browser launch:', err);
-    res.status(500).send('Error while launching browser');
+    console.error('Ошибка при запуске Puppeteer:', err);
+    res.status(500).send('Error occurred while scraping data.');
   }
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
