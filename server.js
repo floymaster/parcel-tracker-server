@@ -1,44 +1,34 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Статическая страница, чтобы проверить работу сервера
-app.get('/', (req, res) => {
-  res.send('Hello, your server is running!');
-});
-
-// Роут для тестирования Puppeteer
 app.get('/test-puppeteer', async (req, res) => {
   try {
-    // Запуск браузера в headless режиме
+    // Путь к бинарному файлу Chrome
+    const browserExecutablePath = process.env.CHROME_EXECUTABLE_PATH || '/usr/bin/google-chrome';
+
+    // Инициализация браузера Puppeteer с указанием пути
     const browser = await puppeteer.launch({
-      headless: true, // Браузер будет работать без интерфейса
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Для Linux/Render
+      executablePath: browserExecutablePath,
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
-    // Открытие новой страницы
     const page = await browser.newPage();
-
-    // Переход на страницу Google
     await page.goto('https://www.google.com');
-
-    // Получение заголовка страницы
     const title = await page.title();
-
-    // Отправляем результат пользователю
-    res.send(`Puppeteer test: Page title is ${title}`);
-
-    // Закрытие браузера
     await browser.close();
+
+    res.send(`Puppeteer test: Page title is ${title}`);
   } catch (error) {
     console.error('Error during Puppeteer operation:', error);
-    res.status(500).send('Something went wrong while running Puppeteer');
+    res.status(500).send('Error during Puppeteer operation');
   }
 });
 
-// Старт сервера
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });
