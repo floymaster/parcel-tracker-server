@@ -9,6 +9,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "express": "^5.1.0",
     "puppeteer": "^22.15.0",
     "simple-update-notifier": "^2.0.0"
   },
