@@ -7,7 +7,7 @@ app.use(cors());
 
 app.get('/track', async (req, res) => {
   const code = req.query.code;
-  if (!code) return res.status(400).json({ error: 'Missing code' });
+  if (!code) return res.status(400).json({ error: 'Missing code parameter' });
   try {
     const events = await trackParcel(code);
     return res.json(events);
@@ -18,4 +18,6 @@ app.get('/track', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Parcel tracker listening on port ${PORT}`);
+});
