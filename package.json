@@ -1,7 +1,7 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
-  "description": "Proxy-сервер для Track24 через cookie-jar",
+  "description": "HTML-scraper для Track24 (cloudscraper + cheerio)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -9,9 +9,8 @@
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-fetch": "^2.6.7",
-    "fetch-cookie": "^0.7.0",
-    "tough-cookie": "^4.1.2"
+    "cloudscraper": "^1.2.65",
+    "cheerio": "^1.0.0-rc.12"
   },
   "engines": {
     "node": "18.x"

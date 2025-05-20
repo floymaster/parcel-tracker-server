@@ -1,48 +1,44 @@
-const nodeFetch = require('node-fetch');
-const fetchCookie = require('fetch-cookie/node-fetch');
-const { CookieJar } = require('tough-cookie');
+const cloudscraper = require('cloudscraper');
+const cheerio = require('cheerio');
 
-const jar = new CookieJar();
-const fetch = fetchCookie(nodeFetch, jar);
-
-const HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-    'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-    'Chrome/114.0.0.0 Safari/537.36',
-  'Accept': 'application/json, text/plain, */*',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Origin': 'https://track24.net',
-  'Referer': 'https://track24.net/'
-};
+const BASE = 'https://track24.net';
 
 async function trackParcel(code) {
-  const base = 'https://track24.net';
+  // 1) Получаем HTML страницы с кодом — cloudscraper обойдёт CF
+  const html = await cloudscraper.get({
+    url:     `${BASE}/?code=${encodeURIComponent(code)}`,
+    method:  'GET',
+    gzip:    true,
+    timeout: 20000,
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+        'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+        'Chrome/114.0.0.0 Safari/537.36',
+      'Accept':
+        'text/html,application/xhtml+xml,application/xml;' +
+        'q=0.9,*/*;q=0.8',
+      'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Connection': 'keep-alive'
+    }
+  });
 
-  // 1) Инициализируем куки, заходя на главную
-  await fetch(base, { headers: HEADERS, timeout: 15000 });
+  // 2) Парсим таблицу #trackingEvents
+  const $ = cheerio.load(html);
+  const rows = $('#trackingEvents .trackingInfoRow');
+  const events = [];
 
-  // 2) Бьем по JSON API
-  const apiUrl = `${base}/service/track/tracking/${encodeURIComponent(code)}`;
-  const resp = await fetch(apiUrl, { headers: HEADERS, timeout: 15000 });
+  rows.each((_, el) => {
+    const date     = $(el).find('.date b').text().trim();
+    const time     = $(el).find('.time').text().trim();
+    const status   = $(el).find('.operationAttribute').text().trim();
+    const location = $(el).find('.operationPlace').text().trim();
+    if (status) {
+      events.push({ date, time, status, location });
+    }
+  });
 
-  if (!resp.ok) {
-    throw new Error(`Failed to load JSON API: ${resp.status}`);
-  }
-
-  const json = await resp.json();
-  const eventsRaw =
-    (json.data?.data?.events) ||
-    (json.data?.events) ||
-    [];
-
-  // Маппим в формат для popup.js
-  return eventsRaw.map(ev => ({
-    status:   ev.status || ev.event || '',
-    date:     ev.date   || (ev.dateTime ? ev.dateTime.split(' ')[0] : ''),
-    time:     ev.time   || (ev.dateTime ? ev.dateTime.split(' ')[1] : ''),
-    location: ev.location || ev.city || ''
-  }));
+  return events;
 }
 
 module.exports = trackParcel;
