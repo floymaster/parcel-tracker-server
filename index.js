@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const cors = require('cors');
 const trackParcel = require('./track');
@@ -12,12 +13,12 @@ app.get('/track', async (req, res) => {
     const events = await trackParcel(code);
     return res.json(events);
   } catch (err) {
-    console.error(err);
+    console.error('⛔', err.message);
     return res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Parcel tracker listening on port ${PORT}`);
+  console.log(`📦 Parcel tracker listening on port ${PORT}`);
 });
