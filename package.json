@@ -1,10 +1,11 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
-  "description": "Server for tracking parcel movement via Puppeteer-compatible headless browser",
+  "description": "Server for tracking parcel movement via Playwright",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "npx playwright install --with-deps"
   },
   "engines": {
     "node": ">=18"
