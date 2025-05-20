@@ -1,58 +1,53 @@
-const got = require('got');
-const { CookieJar } = require('tough-cookie');
-
-// Собираем CookieJar и создаём клиента got, который его юзает
-const jar = new CookieJar();
-const client = got.extend({
-  cookieJar: jar,
-  // не будем автоматически переваривать JSON, нам нужен текст 1-го запроса
-  responseType: 'json', 
-  timeout: { request: 20000 },
-  headers: {
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-      'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-      'Chrome/114.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.9'
-  },
-  retry: 0
-});
-
-const BASE = 'https://track24.net';
+// track.js
+const puppeteer = require('puppeteer');
 
 async function trackParcel(code) {
-  // 1) Захватываем Cloudflare-cookies на главной странице
-  //    здесь responseType: 'json' не нужен, но got.extend уже установил
-  //    поймаем текст, чтобы CF-челлендж закешировал куки
-  try {
-    await client.get(BASE, { responseType: 'text' });
-  } catch (e) {
-    console.warn('Warning: main page fetch failed:', e.message);
-    // иногда можно игнорировать, если защита не срабатывает
-  }
+  // Запускаем Chromium без песочницы, чтобы работало на Render.com
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage'
+    ]
+  });
 
-  // 2) Бьём по JSON-эндпоинту с теми же куками
-  const url = `${BASE}/service/track/tracking/${encodeURIComponent(code)}`;
-  const resp = await client.get(url, { responseType: 'json' });
+  const page = await browser.newPage();
 
-  if (resp.statusCode !== 200) {
-    throw new Error(`Failed to load JSON API: ${resp.statusCode}`);
-  }
+  // Устанавливаем настоящий User-Agent
+  await page.setUserAgent(
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+    'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+    'Chrome/114.0.0.0 Safari/537.36'
+  );
 
-  const json = resp.body;
-  const eventsRaw =
-    (json.data?.data?.events) ||
-    (json.data?.events) ||
-    [];
+  // Открываем страницу с трек-номером
+  const url = `https://track24.net/?code=${encodeURIComponent(code)}`;
+  await page.goto(url, {
+    waitUntil: 'networkidle2',
+    timeout: 30000
+  });
 
-  // 3) Маппим в формат {date,time,status,location}
-  return eventsRaw.map(ev => ({
-    status:   ev.status   || ev.event   || '',
-    date:     ev.date     || (ev.dateTime ? ev.dateTime.split(' ')[0] : ''),
-    time:     ev.time     || (ev.dateTime ? ev.dateTime.split(' ')[1] : ''),
-    location: ev.location || ev.city     || ''
-  }));
+  // Ждём, пока появится таблица событий
+  await page.waitForSelector('#trackingEvents .trackingInfoRow', {
+    timeout: 20000
+  });
+
+  // Парсим все строки таблицы
+  const events = await page.evaluate(() => {
+    return Array.from(
+      document.querySelectorAll('#trackingEvents .trackingInfoRow')
+    ).map(row => {
+      const date     = row.querySelector('.date b')?.innerText.trim() || '';
+      const time     = row.querySelector('.time')?.innerText.trim() || '';
+      const status   = row.querySelector('.operationAttribute')?.innerText.trim() || '';
+      const location = row.querySelector('.operationPlace')?.innerText.trim() || '';
+      return { date, time, status, location };
+    });
+  });
+
+  await browser.close();
+  return events;
 }
 
 module.exports = trackParcel;

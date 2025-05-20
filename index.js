@@ -1,6 +1,7 @@
+// index.js
 const express = require('express');
-const cors    = require('cors');
-const track   = require('./track');
+const cors = require('cors');
+const trackParcel = require('./track');
 
 const app = express();
 app.use(cors());
@@ -10,13 +11,15 @@ app.get('/track', async (req, res) => {
   if (!code) return res.status(400).json({ error: 'Missing code parameter' });
 
   try {
-    const events = await track(code);
+    const events = await trackParcel(code);
     res.json(events);
   } catch (err) {
-    console.error(err);
+    console.error('⛔', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`📦 Listening on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`📦 Parcel tracker listening on port ${PORT}`);
+});
