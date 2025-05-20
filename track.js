@@ -3,13 +3,13 @@
 const cloudscraper = require('cloudscraper');
 
 async function trackParcel(code) {
-  // Собираем URL внутреннего JSON-API Track24
+  // URL внутреннего JSON-API Track24
   const url = `https://track24.net/service/track/tracking/${encodeURIComponent(code)}`;
 
-  // Делаем запрос через cloudscraper (он обходит Cloudflare-защиту)
-  const json = await cloudscraper({
-    method:  'GET',
+  // Делаем запрос через cloudscraper.get, чтобы обойти защиту
+  const json = await cloudscraper.get({
     url:     url,
+    method:  'GET',
     json:    true,
     gzip:    true,
     timeout: 20000,
@@ -25,21 +25,19 @@ async function trackParcel(code) {
     }
   });
 
-  // Внутри ответа события лежат в одной из этих веток
+  // В ответе события могут лежать в data.data.events или data.events
   const eventsRaw =
-    (json.data?.data?.events) ||
-    (json.data?.events) ||
+    json.data?.data?.events ||
+    json.data?.events ||
     [];
 
-  // Мапим на формат, который ждёт ваше popup.js
-  const events = eventsRaw.map(ev => ({
+  // Приводим к нужному формату
+  return eventsRaw.map(ev => ({
     status:   ev.status   || ev.event   || '',
     date:     ev.date     || (ev.dateTime ? ev.dateTime.split(' ')[0] : ''),
     time:     ev.time     || (ev.dateTime ? ev.dateTime.split(' ')[1] : ''),
     location: ev.location || ev.city     || ''
   }));
-
-  return events;
 }
 
 module.exports = trackParcel;
