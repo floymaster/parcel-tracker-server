@@ -13,12 +13,10 @@ app.get('/track', async (req, res) => {
     const events = await trackParcel(code);
     res.json(events);
   } catch (err) {
-    console.error('⛔', err.message);
+    console.error('⛔', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`📦 Parcel tracker listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`📦 Listening on port ${PORT}`));
