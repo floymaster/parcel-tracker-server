@@ -10,13 +10,9 @@ app.get('/track', async (req, res) => {
   if (!code) {
     return res.status(400).json({ error: 'Missing "code" parameter' });
   }
-
   try {
     const events = await trackParcel(code);
-    if (!events || !events.length) {
-      return res.json([]);  // позволим фронту показать «не найдено»
-    }
-    return res.json(events);
+    return res.json(events || []);
   } catch (err) {
     console.error('⛔ Tracking failed:', err);
     return res.status(500).json({
@@ -27,6 +23,6 @@ app.get('/track', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`📦 Parcel tracker listening on port ${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`📦 Parcel tracker listening on port ${PORT}`)
+);
