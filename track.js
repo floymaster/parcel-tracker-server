@@ -1,15 +1,14 @@
-// track.js
-const cheerio = require('cheerio');
-const axios = require('axios').default;
+const fetch = require('node-fetch');
+const fetchCookie = require('fetch-cookie')(fetch);
 const tough = require('tough-cookie');
-const { wrapper } = require('axios-cookiejar-support');
+const cheerio = require('cheerio');
 
-// Создаём cookie-банку и «оборачиваем» axios
+// создаём jar и «оборачиваем» fetch
 const jar = new tough.CookieJar();
-const client = wrapper(axios.create({ jar, withCredentials: true }));
+const client = fetchCookie(fetch, jar);
 
-// Обёртка для единого набора заголовков
-const defaultHeaders = {
+// общий набор заголовков для «эмуляции браузера»
+const DEFAULT_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
     'AppleWebKit/537.36 (KHTML, like Gecko) ' +
@@ -20,24 +19,23 @@ const defaultHeaders = {
 };
 
 async function trackParcel(code) {
-  const base = 'https://track24.net';
+  const baseUrl = 'https://track24.net';
 
-  // 1) Зайдём на главную, чтобы получить CF-куки
-  await client.get(base, { headers: defaultHeaders, timeout: 15000 });
+  // 1) Заходим на главную, чтобы получить CF-куки
+  await client(baseUrl, { headers: DEFAULT_HEADERS, timeout: 15000 });
 
-  // 2) Зайдём на страницу с трек-кодом
-  const url = `${base}/?code=${encodeURIComponent(code)}`;
-  const resp = await client.get(url, {
-    headers: defaultHeaders,
+  // 2) Заходим на страницу с ?code=
+  const url = `${baseUrl}/?code=${encodeURIComponent(code)}`;
+  const resp = await client(url, {
+    headers: DEFAULT_HEADERS,
     timeout: 20000
   });
-
   if (resp.status !== 200) {
     throw new Error(`Failed to load page: ${resp.status}`);
   }
 
-  // 3) Парсим HTML
-  const $ = cheerio.load(resp.data);
+  const html = await resp.text();
+  const $ = cheerio.load(html);
   const rows = $('#trackingEvents .trackingInfoRow');
   const events = [];
 
