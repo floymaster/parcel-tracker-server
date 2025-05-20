@@ -1,7 +1,7 @@
 {
   "name": "parcel-tracker-server",
   "version": "1.0.0",
-  "description": "Proxy + scraper для Track24 (fetch-cookie)",
+  "description": "Proxy-сервер для Track24 (fetch-cookie + cheerio)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

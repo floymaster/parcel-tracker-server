@@ -6,16 +6,18 @@ const app = express();
 app.use(cors());
 
 app.get('/track', async (req, res) => {
-  const code = req.query.code;
+  const code = (req.query.code || '').trim();
   if (!code) return res.status(400).json({ error: 'Missing code parameter' });
   try {
     const events = await trackParcel(code);
-    return res.json(events);
+    res.json(events);
   } catch (err) {
-    console.error('⛔', err);
-    return res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`📦 Parcel tracker listening on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`📦 Parcel tracker listening on port ${PORT}`);
+});
