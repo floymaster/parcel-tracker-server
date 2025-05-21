@@ -1,76 +1,102 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Включаем CORS для обработки запросов от расширения
+// Включаем плагин Stealth для обхода обнаружения
+puppeteer.use(StealthPlugin());
+
 app.use(cors());
 
-// Маршрут для отслеживания посылок
 app.get('/track', async (req, res) => {
+  const { code } = req.query;
+  
+  if (!code) {
+    return res.status(400).json({ error: 'Tracking code is required' });
+  }
+  
+  let browser = null;
+  
   try {
-    const { code } = req.query;
-    
-    if (!code) {
-      return res.status(400).json({ error: 'Tracking code is required' });
-    }
-    
-    // Получаем HTML страницу с track24.net
-    const response = await axios.get(`https://track24.net/?code=${code}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://track24.net/'
-      }
+    // Настройка для Railway без Docker
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.NODE_ENV === 'production' 
+        ? '/usr/bin/chromium-browser'  // Путь в Railway
+        : undefined,                   // Локальный путь по умолчанию
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--single-process'
+      ]
     });
     
-    // Парсим HTML с помощью cheerio
-    const $ = cheerio.load(response.data);
-    const events = [];
+    // Остальной код...
+    const page = await browser.newPage();
     
-    // Находим и извлекаем информацию о событиях отслеживания
-    $('.event-list .event-item').each((index, element) => {
-      const status = $(element).find('.event-status').text().trim();
-      const date = $(element).find('.event-date').text().trim().split(' ')[0];
-      const time = $(element).find('.event-date').text().trim().split(' ')[1] || '';
-      const location = $(element).find('.event-location').text().trim();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    
+    await page.goto(`https://track24.net/?code=${code}`, {
+      waitUntil: 'networkidle2',
+      timeout: 60000
+    });
+    
+    await page.waitForSelector('.event-list, .tracking-events', { timeout: 30000 }).catch(() => {});
+    
+    const events = await page.evaluate(() => {
+      const results = [];
       
-      events.push({
-        status,
-        date,
-        time,
-        location
-      });
-    });
-    
-    // Если не нашли события в стандартном формате, попробуем альтернативный
-    if (events.length === 0) {
-      $('.tracking-events .tracking-event').each((index, element) => {
-        const status = $(element).find('.status').text().trim();
-        const dateTime = $(element).find('.date').text().trim();
-        const date = dateTime.split(' ')[0];
-        const time = dateTime.split(' ')[1] || '';
-        const location = $(element).find('.location').text().trim();
-        
-        events.push({
-          status,
-          date,
-          time,
-          location
+      // Пробуем найти события в первом формате
+      const eventItems = document.querySelectorAll('.event-list .event-item');
+      if (eventItems.length > 0) {
+        eventItems.forEach(item => {
+          const status = item.querySelector('.event-status')?.textContent.trim() || '';
+          const dateTime = item.querySelector('.event-date')?.textContent.trim() || '';
+          const dateParts = dateTime.split(' ');
+          const date = dateParts[0] || '';
+          const time = dateParts[1] || '';
+          const location = item.querySelector('.event-location')?.textContent.trim() || '';
+          
+          results.push({ status, date, time, location });
         });
-      });
-    }
+      }
+      
+      // Если не нашли, пробуем второй формат
+      if (results.length === 0) {
+        const trackingEvents = document.querySelectorAll('.tracking-events .tracking-event');
+        trackingEvents.forEach(item => {
+          const status = item.querySelector('.status')?.textContent.trim() || '';
+          const dateTime = item.querySelector('.date')?.textContent.trim() || '';
+          const dateParts = dateTime.split(' ');
+          const date = dateParts[0] || '';
+          const time = dateParts[1] || '';
+          const location = item.querySelector('.location')?.textContent.trim() || '';
+          
+          results.push({ status, date, time, location });
+        });
+      }
+      
+      return results;
+    });
     
     res.json(events);
   } catch (error) {
     console.error('Error tracking parcel:', error);
     res.status(500).json({ error: 'Failed to track parcel' });
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
-// Простой маршрут для проверки работоспособности сервера
 app.get('/', (req, res) => {
   res.send('Parcel Tracker API is running');
 });
