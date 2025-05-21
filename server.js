@@ -23,9 +23,7 @@ app.get('/track', async (req, res) => {
     // Настройка для Railway без Docker
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.NODE_ENV === 'production' 
-        ? '/usr/bin/chromium-browser'  // Путь в Railway
-        : undefined,                   // Локальный путь по умолчанию
+      // executablePath is removed to allow Puppeteer to use its bundled Chromium
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -33,8 +31,8 @@ app.get('/track', async (req, res) => {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu',
-        '--single-process'
+        '--single-process', // Keep if memory is very constrained, otherwise optional
+        '--disable-gpu'
       ]
     });
     
